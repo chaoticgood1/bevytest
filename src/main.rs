@@ -19,8 +19,8 @@ pub fn setup(
   meshes: ResMut<Assets<Mesh>>,
 	materials: ResMut<Assets<StandardMaterial>>
 ) {
-	normal_add(commands, meshes, materials);
-	// group_add(commands, meshes, materials);
+	// normal_add(commands, meshes, materials);
+	group_add(commands, meshes, materials);
 }
 
 fn normal_add(	
