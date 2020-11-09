@@ -1,11 +1,11 @@
 [package]
 name = "bevytest"
 version = "0.1.0"
-authors = ["mcolete <mcolete@katanatechworks.com>"]
+authors = ["Nickan <colete_nico@yahoo.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.2.1"
-bevy_rapier3d = "0.3.1"
+bevy = "0.3.0"
+bevy_mod_picking = "0.2.0"
