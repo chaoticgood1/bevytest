@@ -7,5 +7,12 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.3.0"
+# bevy = "0.3.0"
+# bevy = { git = "https://github.com/bevyengine/bevy", rev = "213ba9629a27084f40e1d1cefab49d2819cf1f0b"}
+bevy = { path = "../../dependencies/bevy"}
+bevy_fly_camera = "0.5.0"
 bevy_mod_picking = "0.2.0"
+# bevy_mod_picking = { path = "../../dependencies/bevy_mod_picking"}
+bevy_rapier3d = "0.5.0"
+building-blocks = { git = "https://github.com/bonsairobo/building-blocks", rev = "b8d07156e11c9875bab3f32c0fe82d026bfda952"}
+noise = "0.6.0"
