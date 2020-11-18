@@ -282,7 +282,7 @@ fn startup(
       ..Default::default()
     })
     .spawn(Camera3dComponents {
-      transform: Transform::from_translation(Vec3::new(3.0, 20.0, -20.0))
+      transform: Transform::from_translation(Vec3::new(3.0, 5.0, -8.0))
           .looking_at(Vec3::default(), Vec3::unit_y()),
       ..Default::default()
     });
@@ -349,101 +349,147 @@ fn generate_meshes(
   // let texture_handle = asset_server.load("albedo.png");
   let texture_handle = asset_server.load("elon.png");
 
-  let mutated_chunk_keys = &terrain_resource.mutated_chunk_keys;
-  let map = &terrain_resource.map;
-  // let map_chunk_graphics = &terrain_resource.map_chunk_graphics;
-  let chunk_shape = terrain_resource.chunk_shape.clone();
+  // Create a green material
+  let green_material: Handle<MyMaterial> = materials.add(MyMaterial {
+    albedo: Color::rgb(0.0, 0.8, 0.0),
+    albedo_texture: Some(texture_handle.clone()),
+    shaded: true,
+  });
 
-  // For each mutated chunk, and any adjacent chunk, the mesh will need to be updated. (This is
-  // not 100% true, but it's a conservative assumption to make. In reality, if a given voxel is
-  // mutated and it's L1 distance from an adjacent chunk is less than or equal to 2, that adjacent
-  // chunk's mesh is dependent on that voxel, so it must be re-meshed).
-  let mut chunk_keys_to_update: HashSet<Point3i> = HashSet::new();
-  let offsets = Point3i::moore_offsets();
-  for chunk_key in mutated_chunk_keys.iter() {
-    chunk_keys_to_update.insert(*chunk_key);
-    for offset in offsets.iter() {
-      chunk_keys_to_update.insert(*chunk_key + *offset * chunk_shape);
-    }
-  }
+  // Create a cube mesh which will use our materials
+  let cube_handle = meshes.add(Mesh::from(shape::Cube { size: 1.0 }));
 
-  // Now we generate mesh vertices for each chunk.
-  let local_cache = LocalChunkCache::new();
-  let reader = ChunkMapReader3::new(map, &local_cache);
-  for chunk_key in chunk_keys_to_update.into_iter() {
-    let padded_chunk_extent = map.extent_for_chunk_at_key(&chunk_key).padded(1);
-    let mut padded_chunk = Array3::fill(padded_chunk_extent, 0.0);
-    copy_extent(&padded_chunk_extent, &reader, &mut padded_chunk);
-    let mut sn_buffer = SurfaceNetsBuffer::new(padded_chunk_extent.num_points());
-    surface_nets(&padded_chunk, &padded_chunk_extent, &mut sn_buffer);
-
-    let mut indices_u32: Vec<u32> = vec![];
-    for i in sn_buffer.indices {
-      indices_u32.push(i as u32);
-    }
-    let indices_points = convert_flatu32_to_points(indices_u32.clone());
-
-    if indices_u32.len() == 0 {
-      continue;
-    }
-
-    let positions = sn_buffer.positions.clone();
-    let normals = sn_buffer.normals.clone();
-    let mesh = create_mesh(meshes, positions, normals, indices_u32);
-
-    // Create as a function
-    let body = RigidBodyBuilder::new_static().translation(0., 0., 0.);
-    let collider = ColliderBuilder::trimesh(
-      convert_arrayf32_to_points(sn_buffer.positions),
-      indices_points,
-    );
-
-    // Create a green material
-    let green_material: Handle<MyMaterial> = materials.add(MyMaterial {
-      albedo: Color::rgb(0.0, 0.8, 0.0),
-      albedo_texture: Some(texture_handle.clone()),
-      shaded: true,
-    });
-
-    commands
+  commands
     // cube
     .spawn(MeshComponents {
-      mesh: mesh,
-      render_pipelines: RenderPipelines::from_pipelines(vec![RenderPipeline::specialized(
-        pipeline_handle.clone(),
-        // NOTE: in the future you wont need to manually declare dynamic bindings
-        PipelineSpecialization {
-          dynamic_bindings: vec![
-            // DynamicBinding {
-            //   bind_group: 0,
-            //   binding: 0,
-            // },
-            // DynamicBinding {
-            //   bind_group: 1,
-            //   binding: 1,
-            // },
-            // Transform
-            DynamicBinding {
-              bind_group: 2,
-              binding: 0,
+        mesh: cube_handle.clone(),
+        render_pipelines: RenderPipelines::from_pipelines(vec![RenderPipeline::specialized(
+            pipeline_handle.clone(),
+            // NOTE: in the future you wont need to manually declare dynamic bindings
+            PipelineSpecialization {
+                dynamic_bindings: vec![
+                    // Transform
+                    DynamicBinding {
+                      bind_group: 2,
+                      binding: 0,
+                    },
+                    // // MyMaterial_color
+                    // DynamicBinding {
+                    //     bind_group: 1,
+                    //     binding: 1,
+                    // },
+                    DynamicBinding {
+                        bind_group: 3,
+                        binding: 0,
+                    },
+                    // // MyMaterial_color
+                    // DynamicBinding {
+                    //     bind_group: 3,
+                    //     binding: 1,
+                    // },
+                ],
+                ..Default::default()
             },
-            // MyMaterial_color
-            DynamicBinding {
-              bind_group: 3,
-              binding: 0,
-            },
-          ],
-          ..Default::default()
-        },
-      )]),
-      transform: Transform::from_translation(Vec3::new(-2.0, 0.0, 0.0)),
-      ..Default::default()
+        )]),
+        transform: Transform::from_translation(Vec3::new(-2.0, 0.0, 0.0)),
+        ..Default::default()
     })
-    .with(green_material.clone())
-    .with(body)
-    .with(collider)
-    ;
-  }
+    .with(green_material);
+
+
+
+
+
+
+
+  // let mutated_chunk_keys = &terrain_resource.mutated_chunk_keys;
+  // let map = &terrain_resource.map;
+  // // let map_chunk_graphics = &terrain_resource.map_chunk_graphics;
+  // let chunk_shape = terrain_resource.chunk_shape.clone();
+
+  // // For each mutated chunk, and any adjacent chunk, the mesh will need to be updated. (This is
+  // // not 100% true, but it's a conservative assumption to make. In reality, if a given voxel is
+  // // mutated and it's L1 distance from an adjacent chunk is less than or equal to 2, that adjacent
+  // // chunk's mesh is dependent on that voxel, so it must be re-meshed).
+  // let mut chunk_keys_to_update: HashSet<Point3i> = HashSet::new();
+  // let offsets = Point3i::moore_offsets();
+  // for chunk_key in mutated_chunk_keys.iter() {
+  //   chunk_keys_to_update.insert(*chunk_key);
+  //   for offset in offsets.iter() {
+  //     chunk_keys_to_update.insert(*chunk_key + *offset * chunk_shape);
+  //   }
+  // }
+
+  // // Now we generate mesh vertices for each chunk.
+  // let local_cache = LocalChunkCache::new();
+  // let reader = ChunkMapReader3::new(map, &local_cache);
+  // for chunk_key in chunk_keys_to_update.into_iter() {
+  //   let padded_chunk_extent = map.extent_for_chunk_at_key(&chunk_key).padded(1);
+  //   let mut padded_chunk = Array3::fill(padded_chunk_extent, 0.0);
+  //   copy_extent(&padded_chunk_extent, &reader, &mut padded_chunk);
+  //   let mut sn_buffer = SurfaceNetsBuffer::new(padded_chunk_extent.num_points());
+  //   surface_nets(&padded_chunk, &padded_chunk_extent, &mut sn_buffer);
+
+  //   let mut indices_u32: Vec<u32> = vec![];
+  //   for i in sn_buffer.indices {
+  //     indices_u32.push(i as u32);
+  //   }
+  //   let indices_points = convert_flatu32_to_points(indices_u32.clone());
+
+  //   if indices_u32.len() == 0 {
+  //     continue;
+  //   }
+
+  //   let positions = sn_buffer.positions.clone();
+  //   let normals = sn_buffer.normals.clone();
+  //   let mesh = create_mesh(meshes, positions, normals, indices_u32);
+
+  //   // Create as a function
+  //   let body = RigidBodyBuilder::new_static().translation(0., 0., 0.);
+  //   let collider = ColliderBuilder::trimesh(
+  //     convert_arrayf32_to_points(sn_buffer.positions),
+  //     indices_points,
+  //   );
+
+  //   commands
+  //   // cube
+  //   .spawn(MeshComponents {
+  //     mesh: mesh,
+  //     render_pipelines: RenderPipelines::from_pipelines(vec![RenderPipeline::specialized(
+  //       pipeline_handle.clone(),
+  //       // NOTE: in the future you wont need to manually declare dynamic bindings
+  //       PipelineSpecialization {
+  //         dynamic_bindings: vec![
+  //           // DynamicBinding {
+  //           //   bind_group: 0,
+  //           //   binding: 0,
+  //           // },
+  //           // DynamicBinding {
+  //           //   bind_group: 1,
+  //           //   binding: 1,
+  //           // },
+  //           // Transform
+  //           DynamicBinding {
+  //             bind_group: 2,
+  //             binding: 0,
+  //           },
+  //           // MyMaterial_color
+  //           DynamicBinding {
+  //             bind_group: 3,
+  //             binding: 0,
+  //           },
+  //         ],
+  //         ..Default::default()
+  //       },
+  //     )]),
+  //     transform: Transform::from_translation(Vec3::new(-2.0, 0.0, 0.0)),
+  //     ..Default::default()
+  //   })
+  //   .with(green_material.clone())
+  //   .with(body)
+  //   .with(collider)
+  //   ;
+  // }
 }
 
 fn create_mesh(
