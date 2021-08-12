@@ -22,10 +22,10 @@ impl Plugin for CustomPlugin {
 
 fn keyboard_input_system(
   keyboard_input: Res<Input<KeyCode>>,
-  mut player_query: Query<(&Player, &RigidBodyMassProps, &mut RigidBodyVelocity)>
+  mut player_query: Query<(&Player, &RigidBodyMassProps, &mut RigidBodyVelocity, &mut RigidBodyForces)>
   // mut player_query: Query<(&Player, &RigidBodyMassProps, &mut RigidBodyForces)>
 ) {
-  if keyboard_input.just_released(KeyCode::W) {
+  if keyboard_input.just_pressed(KeyCode::W) {
     // for (_, rigid_mass, mut rigid_forces) in player_query.iter_mut() {
     //   println!("force");
     //   // rigid_forces.force += Vector3::new(0.0, 0.0, 1000000000.0);
@@ -33,8 +33,11 @@ fn keyboard_input_system(
     //   // rigid_forces.apply_force_at_point(rigid_mass, Vector3::new(0.0, 0.0, 13500.0), Point3::origin());
     // }
 
-    for (_, rigid_mass, mut rigid_velocity) in player_query.iter_mut() {
-      rigid_velocity.apply_impulse(rigid_mass, Vector3::new(0.0, 0.0, 100.0));
+    for (_, rigid_mass, mut rigid_velocity, mut rigid_force) in player_query.iter_mut() {
+      println!("force");
+      // rigid_force.force = Vec3::new(0.0, 0.0, 100000.0).into();
+      // rigid_force.torque = Vec3::new(0.0, 0.0, 100000.0).into();
+      rigid_velocity.apply_impulse(rigid_mass, Vec3::new(100.0, 0.0, 0.0).into());
     }
   }
   if keyboard_input.just_pressed(KeyCode::S) {
@@ -68,7 +71,7 @@ fn player(
   if let Some(VertexAttributeValues::Float3(pos)) = mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
     if let Some(Indices::U32(ind)) = mesh.indices() {
       let scale = Vec3::new(0.5, 0.5, 0.5);
-      let coord = Vec3::new(0.0, 1.0, 0.0);
+      let coord = Vec3::new(0.0, 2.0, 0.0);
 
       // commands.spawn_bundle(PbrBundle {
       //   mesh: meshes.add(mesh.clone()),
@@ -89,12 +92,15 @@ fn player(
         body_type: RigidBodyType::Dynamic,
         mass_properties: RigidBodyMassProps {
           // flags: locked_dofs,
-          local_mprops: MassProperties::new(Point3::new(1.0, 0.0, 0.0), 1.0, na::zero()),
+          local_mprops: MassProperties::new(
+            Point3::new(0.0, 0.0, 0.0), 1.0, Vector3::new(0.0, 0.0, 0.0)
+          ),
           ..RigidBodyMassProps::default()
         },
+        activation: RigidBodyActivation::cannot_sleep(),
+        // ccd: RigidBodyCcd { ccd_enabled: true, ..Default::default() },
         ..RigidBodyBundle::default()
       };
-
       // println!("pos {:?}", pos);
       // println!("ind {:?}", ind);
 
@@ -113,6 +119,7 @@ fn player(
         .insert_bundle(rigid_body)
         .insert_bundle(collider)
         .insert_bundle(pbr)
+        .insert(RigidBodyPositionSync::Discrete)
         // .insert(ColliderDebugRender::default())
         // .insert(ColliderPositionSync::Discrete)
         .insert(Player)
@@ -127,7 +134,8 @@ fn ground(
   mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
   let size = 50.0;
-  let mesh = Mesh::from(mesh::shape::Plane { size: size });
+  // let mesh = Mesh::from(mesh::shape::Plane { size: size });
+  let mesh = Mesh::from(mesh::shape::Box::new(size, 0.1, size));
   let positions = mesh.attribute(Mesh::ATTRIBUTE_POSITION);
 
   if let Some(VertexAttributeValues::Float3(pos)) = mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
@@ -149,11 +157,15 @@ fn ground(
           convert_flatu32_to_points(ind.clone()),
         ),
         position: [0.0, 0.0, 0.0].into(),
+        material: ColliderMaterial {
+          friction: 1.0,
+          ..Default::default()
+        },
         ..ColliderBundle::default()
       };
       commands
         .spawn_bundle(collider)
-        .insert(ColliderDebugRender::default())
+        // .insert(ColliderDebugRender::default())
         .insert(ColliderPositionSync::Discrete);
       // println!("Create ground");
     }
@@ -186,7 +198,7 @@ fn ground(
 fn update(mut player_query: Query<(&Player, &RigidBodyPosition, &mut Transform)>) {
   for (_player, rigid_pos, mut trans) in player_query.iter_mut() {
     let pos = rigid_pos.position.translation.vector.xyz();
-    trans.translation = Vec3::new(pos[0], pos[1], pos[2]);
+    // trans.translation = Vec3::new(pos[0], pos[1], pos[2]);
     // println!("r {:?} t {:?}", pos[0], trans.translation);
   }
 }
