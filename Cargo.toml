@@ -1,47 +1,9 @@
 [package]
-name = "bevy_app"
+name = "bevy_test"
 version = "0.1.0"
 authors = ["ashneverdawn <ashneverdawn@gmail.com>"]
 edition = "2018"
 
-
-# ------- WASM
-[features]
-default = [
-  "bevy/bevy_gltf",
-  "bevy/bevy_winit",
-  "bevy/render",
-  "bevy/png",
-]
-
-native = [
-  "bevy/bevy_wgpu",
-]
-
-web = [
-  "bevy_webgl2"
-]
-
 [dependencies]
-bevy = {version="0.4.0", default-features=false}
-bevy_webgl2 = {version="0.4.0", optional=true}
-winit = {version = "0.24.0"}
-uuid = {version="=0.8.1"}
-image = "0.23"
-itertools = "0.10"
-rand = "0.8"
-
-[profile.dev]
-opt-level = 1
-
-
-# ------- Default bevy
-# [dependencies]
-# bevy = "0.4"
-# image = "0.23"
-# itertools = "0.10"
-
-# # [dev-dependencies]
-# bevy_fly_camera = "0.6"
-# bevy_log = "0.4"
-# rand = "0.8"
+bevy = "0.5.0"
+bevy_rapier3d = "0.10.2"

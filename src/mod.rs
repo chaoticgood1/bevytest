@@ -1,3 +1,3 @@
-pub mod bevy_skybox;
 pub mod camera;
-pub mod modules;
+pub mod raycast;
+pub mod player;
