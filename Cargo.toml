@@ -7,7 +7,7 @@ edition = "2018"
 
 [dependencies]
 bevy = "0.5.0"
-bevy_rapier3d = "0.10.2"
+bevy_rapier3d = { version = "0.10.2", features = [ "parallel", "simd-stable" ]}
 # bevy_rapier3d = { path = "../bevy_rapier3d-0.10.2", features = [ "parallel", "simd-stable" ]}
 
 [patch.crates-io]
