@@ -1,4 +1,7 @@
 use bevy::math::{Vec3, Quat};
+use bevy::prelude::*;
+use bevy::render::mesh::Indices;
+use bevy::render::render_resource::PrimitiveTopology;
 use voxels::{chunk::{voxel_pos_to_key}, data::{voxel_octree::VoxelOctree, surface_nets::{VoxelReuse, get_surface_nets2}}};
 
 pub struct Math;
@@ -76,6 +79,24 @@ pub struct MeshColliderData {
   pub positions: Vec<Vec3>,
   pub indices: Vec<[u32; 3]>,
 }
+
+
+pub fn create_mesh(
+  meshes: &mut ResMut<Assets<Mesh>>,
+  positions: Vec<[f32; 3]>,
+  normals: Vec<[f32; 3]>,
+  uvs: Vec<[f32; 2]>,
+  indices: Vec<u32>,
+) -> Handle<Mesh> {
+  let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
+  mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+  mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
+  mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
+  mesh.set_indices(Some(Indices::U32(indices)));
+  meshes.add(mesh)
+}
+
+
 
 pub fn key_to_world_coord_f32(key: &[i64; 3], seamless_size: u32) -> [f32; 3] {
   [

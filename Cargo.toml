@@ -9,3 +9,9 @@ edition = "2021"
 bevy = { version = "0.7.0", features = ["dynamic"] }
 ironverse = { path = "../../ironverse-net/lib" }
 voxels = { path = "../../voxels" }
+
+rapier3d = { version="0.14.0", features = ["enhanced-determinism"] }
+futures-lite = "1.11.3"
+flume = "0.10.14"
+serde = { version = "1", features = ["derive"] }
+async-std = "1.12.0"

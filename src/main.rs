@@ -1,15 +1,18 @@
 use bevy::{prelude::*, render::{render_resource::PrimitiveTopology, mesh::Indices}};
 use camera::Anchor;
+use utils::create_mesh;
 use voxels::{chunk::chunk_manager::ChunkManager, data::voxel_octree::VoxelMode, utils::key_to_world_coord_f32};
 
 mod camera;
 mod utils;
+mod physics;
 
 fn main() {
   App::new()
     // .insert_resource(Msaa { samples: 4 })
     .add_plugins(DefaultPlugins)
     .add_plugin(camera::CustomPlugin)
+    .add_plugin(physics::CustomPlugin)
     .add_startup_system(setup)
     .add_startup_system(add_player)
     .run();
@@ -21,13 +24,6 @@ fn setup(
   mut meshes: ResMut<Assets<Mesh>>,
   mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-  // plane
-  commands.spawn_bundle(PbrBundle {
-    mesh: meshes.add(Mesh::from(shape::Plane { size: 5.0 })),
-    material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
-    ..default()
-  });
-
   let chunk_manager = ChunkManager::default();
   let mut config = chunk_manager.config;
 
@@ -61,13 +57,6 @@ fn setup(
       ..Default::default()
     });
 
-
-
-
-
-
-
-
   // light
   commands.spawn_bundle(PointLightBundle {
     point_light: PointLight {
@@ -79,11 +68,12 @@ fn setup(
     ..default()
   });
 
-  // // camera
-  // commands.spawn_bundle(PerspectiveCameraBundle {
-  //   transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
-  //   ..default()
-  // });
+  // plane
+  commands.spawn_bundle(PbrBundle {
+    mesh: meshes.add(Mesh::from(shape::Plane { size: 1.0 })),
+    material: materials.add(Color::rgb(1.0, 1.0, 1.0).into()),
+    ..default()
+  });
 }
 
 
@@ -120,18 +110,20 @@ fn add_player(
 }
 
 
+/*
+  Goal
+    Make iteration faster
 
-pub fn create_mesh(
-  meshes: &mut ResMut<Assets<Mesh>>,
-  positions: Vec<[f32; 3]>,
-  normals: Vec<[f32; 3]>,
-  uvs: Vec<[f32; 2]>,
-  indices: Vec<u32>,
-) -> Handle<Mesh> {
-  let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
-  mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
-  mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
-  mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
-  mesh.set_indices(Some(Indices::U32(indices)));
-  meshes.add(mesh)
-}
+  Implementation
+    Create part by part deployment in this separate repo
+    Get the terrain editing to work
+    Makeshift the features for now
+    Make it work
+    Then solve how to bridge the difference between the prototype repo to the production repo
+
+    Current
+      Make terrain editing work
+      Player movement
+      Raycast
+
+*/
