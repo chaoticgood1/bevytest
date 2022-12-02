@@ -1,87 +1,75 @@
-use bevy::{diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}, prelude::*, tasks::{AsyncComputeTaskPool, ComputeTaskPool, TaskPoolBuilder}};
-use bevy_rapier3d::{physics::{ColliderBundle, RapierConfiguration, RapierPhysicsPlugin}, prelude::{ColliderMassProps, ColliderPosition, ColliderShape, ColliderType}};
+// use bevy::prelude::*;
+// use bevy_egui::{egui, EguiContext, EguiPlugin};
 
-use bevy_rapier3d::prelude::*;
+// fn main() {
+//   App::new()
+//     .add_plugins(DefaultPlugins)
+//     .add_plugin(EguiPlugin)
+//     // Systems that create Egui widgets should be run during the `CoreStage::Update` stage,
+//     // or after the `EguiSystem::BeginFrame` system (which belongs to the `CoreStage::PreUpdate` stage).
+//     .add_system(ui_example)
+//     .run();
+// }
+
+// fn ui_example(mut egui_context: ResMut<EguiContext>) {
+//   egui::Window::new("Hello").show(egui_context.ctx_mut(), |ui| {
+//     let response = ui.label("world");
+//     // let response = response.interact(egui::Sense::click());
+//     if response.clicked() {
+//       println!("Click!");
+//     }
+//   });
+// }
+
+use std::time::Duration;
+
+#[cfg(not(target_arch = "wasm32"))]
+use std::thread;
+#[cfg(target_arch = "wasm32")]
+use wasm_thread as thread;
+
+#[cfg(target_arch = "wasm32")]
+mod wasm {
+    use crate::main;
+    use wasm_bindgen::prelude::*;
+
+    // Prevent `wasm_bindgen` from autostarting main on all spawned threads
+    #[wasm_bindgen(start)]
+    pub fn dummy_main() {}
+
+    // Export explicit run function to start main
+    #[wasm_bindgen]
+    pub fn run() {
+        console_log::init().unwrap();
+        console_error_panic_hook::set_once();
+        main();
+    }
+}
 
 fn main() {
-  // let total_cpu = bevy::tasks::logical_core_count();
-  // let compute_cpu = (total_cpu as f32 * 0.75) as usize;
-  // let async_cpu = total_cpu - compute_cpu;
+    #[cfg(not(target_arch = "wasm32"))]
+    env_logger::init_from_env(
+        env_logger::Env::default().filter_or(env_logger::DEFAULT_FILTER_ENV, "info"),
+    );
 
-  // println!("total_cpu {}, compute_cpu {} async_cpu {}", total_cpu, compute_cpu, async_cpu);
+    for _ in 0..2 {
+        thread::spawn(|| {
+            for i in 1..3 {
+                log::info!(
+                    "hi number {} from the spawned thread {:?}!",
+                    i,
+                    thread::current().id()
+                );
+                thread::sleep(Duration::from_millis(1));
+            }
+        });
+    }
 
-  App::build()
-    .add_plugins(DefaultPlugins)
-    // .add_plugins(MinimalPlugins)
-    .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-    .add_plugin(FrameTimeDiagnosticsPlugin::default())
-    .add_plugin(LogDiagnosticsPlugin::default())
-    // .insert_resource(AsyncComputeTaskPool(
-    //   TaskPoolBuilder::default()
-    //     .num_threads(async_cpu)
-    //     .thread_name("Async Compute Task Pool".to_string())
-    //     .build(),
-    // ))
-    // .insert_resource(ComputeTaskPool(
-    //   TaskPoolBuilder::default()
-    //     .num_threads(compute_cpu)
-    //     .thread_name("Compute Task Pool".to_string())
-    //     .build(),
-    // ))
-    .add_startup_system(startup.system())
-    .run();
+    for i in 1..3 {
+        log::info!(
+            "hi number {} from the main thread {:?}!",
+            i,
+            thread::current().id()
+        );
+    }
 }
-
-fn startup(
-  mut commands: Commands,
-  // mut meshes: ResMut<Assets<Mesh>>,
-  // mut materials: ResMut<Assets<StandardMaterial>>,
-  mut rapier_config: ResMut<RapierConfiguration>,
-) {
-  // rapier_config.query_pipeline_active = false;
-  // rapier_config.physics_pipeline_active = false;
-  println!("core count {:?}", bevy::tasks::logical_core_count());
-
-  for index in 0..20000 {
-    let size = 1.0;
-    let collider = ColliderBundle {
-      position: ColliderPosition(Vec3::new(index as f32 * size, 0.0, 0.0).into()),
-      shape: ColliderShape::cuboid(size, size, size),
-      flags: ColliderFlags {
-        active_collision_types: ActiveCollisionTypes::DYNAMIC_STATIC,
-        ..ColliderFlags::default()
-      },
-      ..ColliderBundle::default()
-    };
-
-    commands
-      .spawn()
-      .insert_bundle(collider)
-      .insert(ColliderPositionSync::Discrete);
-  }
-  
-}
-
-pub fn convert_flatu32_to_points(array: Vec<u32>) -> Vec<[u32; 3]> {
-  // let mut points: Vec<Point<u32>> = Vec::new();
-  let mut points: Vec<[u32; 3]> = Vec::new();
-
-  let slices: Vec<&[u32]> = array.chunks(3).collect();
-  for slice in slices.iter() {
-    // points.push(Point::new(slice[0], slice[1], slice[2]));
-    points.push([slice[0], slice[1], slice[2]]);
-  }
-  points
-}
-
-pub fn convert_arrayf32_to_points(array: Vec<[f32; 3]>) -> Vec<Point<f32>> {
-  let mut points: Vec<Point<f32>> = Vec::new();
-
-  for array_p in array.iter() {
-    // FIXME: Testing to move down the meshes to match the voxel
-    // println!("pos {:?}", array_p[1]);
-    points.push(Point::new(array_p[0], array_p[1], array_p[2]));
-  }
-  points
-}
-

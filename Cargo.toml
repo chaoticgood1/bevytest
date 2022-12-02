@@ -1,10 +1,8 @@
 [package]
-name = "rapier_test"
+name = "egui_test"
 version = "0.1.0"
-edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+edition = "2021"
 
 [dependencies]
-bevy = "0.5.0"
-bevy_rapier3d = { version = "0.10.2", features = [ "parallel", "simd-stable" ]}
+bevy = { version = "0.8.0", features = ["dynamic"] }
+bevy_egui = "0.16.1"
