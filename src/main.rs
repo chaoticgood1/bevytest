@@ -6,6 +6,7 @@ use voxels::{chunk::chunk_manager::ChunkManager, data::voxel_octree::VoxelMode, 
 mod camera;
 mod utils;
 mod physics;
+mod connector;
 
 fn main() {
   App::new()
@@ -13,6 +14,7 @@ fn main() {
     .add_plugins(DefaultPlugins)
     .add_plugin(camera::CustomPlugin)
     .add_plugin(physics::CustomPlugin)
+    .add_plugin(connector::CustomPlugin)
     .add_startup_system(setup)
     .add_startup_system(add_player)
     .run();
