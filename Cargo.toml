@@ -8,7 +8,7 @@ edition = "2021"
 
 bevy = { version = "0.5.0", features = ["dynamic"] }
 # ironverse = { path = "../../ironverse-net/lib" }
-# voxels = { path = "../../voxels" }
+voxels = { path = "../../voxels" }
 
 # rapier3d = { version="0.14.0", features = ["enhanced-determinism"] }
 # futures-lite = "1.11.3"
@@ -16,6 +16,8 @@ bevy = { version = "0.5.0", features = ["dynamic"] }
 # serde = { version = "1", features = ["derive"] }
 # async-std = "1.12.0"
 # ron = "0.7"
+
+bevy_fly_camera = "0.7.0"
 
 
 building-blocks = { version = "0.7.0", features = ["glam", "mesh", "sdfu"] }

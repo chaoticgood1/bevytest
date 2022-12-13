@@ -8,12 +8,13 @@ use bevy_utilities::bevy::{
         texture::{AddressMode, SamplerDescriptor},
     },
 };
-use building_blocks::core::prelude::*;
+use building_blocks::{core::{prelude::*, sdfu::SDF}, mesh::{SurfaceNetsBuffer, surface_nets}};
 use building_blocks::mesh::{
     greedy_quads, GreedyQuadsBuffer, IsOpaque, MergeVoxel, OrientedCubeFace, UnorientedQuad,
     RIGHT_HANDED_Y_UP_CONFIG,
 };
 use building_blocks::storage::prelude::*;
+use voxels::data::{voxel_octree::{VoxelOctree, ParentValueType, VoxelMode}, surface_nets::VoxelReuse};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum AppState {
@@ -29,6 +30,7 @@ struct Loading(Handle<Texture>);
 fn main() {
     App::build()
         .add_plugins(DefaultPlugins)
+        .add_plugin(FlyCameraPlugin)
         .insert_resource(State::new(AppState::Loading))
         .add_startup_system(startup.system())
         .add_state(AppState::Loading)
@@ -41,10 +43,27 @@ fn main() {
         .run();
 }
 
+use bevy_fly_camera::{FlyCamera, FlyCameraPlugin};
 fn startup(mut commands: Commands) {
+  
+  // commands
+  //   .spawn_bundle(Camera::default())
+  //   .insert(FlyCamera::default());
+
   commands
     .spawn_bundle(PerspectiveCameraBundle {
-      transform: Transform::from_xyz(0.0, 0.5, -80.0).looking_at(Vec3::ZERO, Vec3::Y),
+      transform: Transform::from_xyz(0.0, 0.5, 10.0).looking_at(Vec3::ZERO, Vec3::Y),
+      ..Default::default()
+    })
+    .insert(FlyCamera {
+
+      ..Default::default()
+    })
+    ;
+
+  commands.spawn_bundle(LightBundle {
+      // transform: Transform::from_translation(Vec3::new(0.0, 100.0, 100.0)),
+      transform: Transform::from_translation(Vec3::new(2.0, 4.0, 2.0)),
       ..Default::default()
     });
 }
@@ -170,13 +189,10 @@ fn setup(
                 RIGHT_HANDED_Y_UP_CONFIG.u_flip_face,
                 mat.0 as u32 - 1,
             );
-
-            // println!("mat.0 {}", mat.0);
-
         }
     }
 
-    let mut render_mesh = Mesh::new(PrimitiveTopology::TriangleList);
+    // let mut render_mesh = Mesh::new(PrimitiveTopology::TriangleList);
 
     let MeshBuf {
         positions,
@@ -186,27 +202,71 @@ fn setup(
         indices,
     } = mesh_buf;
 
-    render_mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, positions);
-    render_mesh.set_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
-    render_mesh.set_attribute(Mesh::ATTRIBUTE_UV_0, tex_coords);
-    render_mesh.set_attribute("Vertex_Layer", layer);
-    render_mesh.set_indices(Some(Indices::U32(indices)));
+    // render_mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+    // render_mesh.set_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
+    // render_mesh.set_attribute(Mesh::ATTRIBUTE_UV_0, tex_coords);
+    // render_mesh.set_attribute("Vertex_Layer", layer);
+    // render_mesh.set_indices(Some(Indices::U32(indices)));
+
+
+
+
+
+    // println!("{:?}", layer);
+    // println!("layer {:?}", layer.len());
+    // println!("normals {:?}", normals.len());
+    // println!("positions {:?}", positions.len());
+    // println!("tex_coords {:?}", tex_coords.len());
+    // println!("indices {:?}", indices.len());
+
+    for coord in tex_coords.iter() {
+      println!("{:?}", coord);
+    }
+
+
+    let mut octree = VoxelOctree::new_from_3d_array(
+      0, 4,
+      &vec![
+        [2, 2, 2, 1],
+      ].to_vec(),
+      ParentValueType::DefaultValue,
+    );
+
+    let data = octree.compute_mesh2(VoxelMode::SurfaceNets, &mut VoxelReuse::new(4, 3));
+    let mut render_mesh = Mesh::new(PrimitiveTopology::TriangleList);
+
+    let mut layers = Vec::new();
+    for i in 0..data.positions.len() {
+      layers.push(1);
+    }
+    
+
+    println!("{:?}", layers);
+    println!("layer {:?}", layers.len());
+    println!("normals {:?}", data.normals.len());
+    println!("positions {:?}", data.positions.len());
+    println!("data.uvs {:?}", data.uvs.len());
+    println!("indices {:?}", data.indices.len());
+
+    render_mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, data.positions);
+    render_mesh.set_attribute(Mesh::ATTRIBUTE_NORMAL, data.normals);
+    render_mesh.set_attribute(Mesh::ATTRIBUTE_UV_0, data.uvs);
+    render_mesh.set_attribute("Vertex_Layer", layers);
+    render_mesh.set_indices(Some(Indices::U32(data.indices)));
+
 
     let pipeline = pipelines.add(PipelineDescriptor::default_config(ShaderStages {
-        vertex: shaders.add(Shader::from_glsl(ShaderStage::Vertex, VERTEX_SHADER)),
-        fragment: Some(shaders.add(Shader::from_glsl(ShaderStage::Fragment, FRAGMENT_SHADER))),
+      vertex: shaders.add(Shader::from_glsl(ShaderStage::Vertex, VERTEX_SHADER)),
+      fragment: Some(shaders.add(Shader::from_glsl(ShaderStage::Fragment, FRAGMENT_SHADER))),
     }));
 
     commands.spawn_bundle(PbrBundle {
-        mesh: meshes.add(render_mesh),
-        render_pipelines: RenderPipelines::from_pipelines(vec![RenderPipeline::new(pipeline)]),
-        material: materials.add(texture_handle.0.clone().into()),
-        ..Default::default()
+      mesh: meshes.add(render_mesh),
+      render_pipelines: RenderPipelines::from_pipelines(vec![RenderPipeline::new(pipeline)]),
+      material: materials.add(texture_handle.0.clone().into()),
+      ..Default::default()
     });
-    // commands.spawn_bundle(LightBundle {
-    //     transform: Transform::from_translation(Vec3::new(0.0, 100.0, 100.0)),
-    //     ..Default::default()
-    // });
+    
     // let camera = commands
     //     .spawn_bundle(PerspectiveCameraBundle::default())
     //     .id();
@@ -287,3 +347,93 @@ void main() {
     );
 }
 "#;
+
+
+
+
+
+
+/* use bevy_utilities::bevy::{
+  prelude::*,
+  render::{
+      mesh::{Indices, VertexAttributeValues},
+      pipeline::PrimitiveTopology,
+  },
+};
+use building_blocks::core::prelude::*;
+use building_blocks::mesh::*;
+use building_blocks::storage::prelude::*;
+
+fn main() {
+  App::build()
+      .add_plugins(DefaultPlugins)
+      .add_startup_system(setup.system())
+      .run();
+}
+
+fn setup(
+  mut commands: Commands,
+  mut materials: ResMut<Assets<StandardMaterial>>,
+  mut meshes: ResMut<Assets<Mesh>>,
+) {
+  use building_blocks::core::sdfu::{self, SDF};
+
+  let sdf = sdfu::Sphere::new(0.45)
+      .subtract(sdfu::Box::new(PointN([0.25, 0.25, 1.5])))
+      .union_smooth(
+          sdfu::Sphere::new(0.3).translate(PointN([0.3, 0.3, 0.0])),
+          0.1,
+      )
+      .union_smooth(
+          sdfu::Sphere::new(0.3).translate(PointN([-0.3, 0.3, 0.0])),
+          0.1,
+      );
+
+  let extent = Extent3i::from_min_and_max(Point3i::fill(-100), Point3i::fill(100));
+  let samples = Array3x1::fill_with(extent, |p| Sd16::from(sdf.dist(0.01 * Point3f::from(p))));
+
+  let mut mesh_buffer = SurfaceNetsBuffer::default();
+  let voxel_size = 1.0;
+  let estimate_normals = true;
+  surface_nets(
+      &samples,
+      samples.extent(),
+      voxel_size,
+      // estimate_normals,
+      &mut mesh_buffer,
+  );
+  let mesh = mesh_buffer.mesh;
+  let num_vertices = mesh.positions.len();
+
+  let mut render_mesh = Mesh::new(PrimitiveTopology::TriangleList);
+  render_mesh.set_attribute(
+      "Vertex_Position",
+      VertexAttributeValues::Float3(mesh.positions),
+  );
+  render_mesh.set_attribute("Vertex_Normal", VertexAttributeValues::Float3(mesh.normals));
+  render_mesh.set_attribute(
+      "Vertex_Uv",
+      VertexAttributeValues::Float2(vec![[0.0; 2]; num_vertices]),
+  );
+  render_mesh.set_indices(Some(Indices::U32(mesh.indices)));
+
+  commands.spawn_bundle(LightBundle {
+      transform: Transform::from_translation(Vec3::new(0.0, 100.0, 100.0)),
+      light: Light {
+          range: 200.0,
+          intensity: 20000.0,
+          ..Default::default()
+      },
+      ..Default::default()
+  });
+  commands.spawn_bundle(PerspectiveCameraBundle {
+      transform: Transform::from_translation(Vec3::new(0.0, 0.0, 150.0))
+          .looking_at(Vec3::new(0.0, 10.0, 0.0), Vec3::Y),
+      ..Default::default()
+  });
+  commands.spawn_bundle(PbrBundle {
+      mesh: meshes.add(render_mesh),
+      material: materials.add(Color::rgb(1.0, 0.0, 0.0).into()),
+      ..Default::default()
+  });
+} */
