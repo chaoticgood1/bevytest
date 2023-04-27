@@ -1,0 +1,29 @@
+[tasks.web]
+dependencies = ["clear", "web-wasm-bindgen-cli", "compile", "client"]
+
+[tasks.compile]
+script = '''
+cargo build --release --target wasm32-unknown-unknown
+wasm-bindgen --out-name bevytest --out-dir assets/wasm --target web target/wasm32-unknown-unknown/release/bevytest.wasm
+'''
+
+[tasks.client]
+script = '''
+basic-http-server .
+'''
+
+[tasks.web-wasm-bindgen-cli]
+install_crate = {crate_name = "wasm-bindgen-cli", binary = "wasm-bindgen", test_arg="--help", version="0.2.84"}
+
+
+[tasks.clear]
+script = '''
+clear
+'''
+
+[tasks.run]
+script = '''
+clear
+clear
+cargo run
+'''
