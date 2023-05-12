@@ -1,87 +1,81 @@
-use bevy::{diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}, prelude::*, tasks::{AsyncComputeTaskPool, ComputeTaskPool, TaskPoolBuilder}};
-use bevy_rapier3d::{physics::{ColliderBundle, RapierConfiguration, RapierPhysicsPlugin}, prelude::{ColliderMassProps, ColliderPosition, ColliderShape, ColliderType}};
-
-use bevy_rapier3d::prelude::*;
+use bevy::{prelude::*, render::pipelined_rendering::PipelinedRenderingPlugin, diagnostic::FrameTimeDiagnosticsPlugin, window::PresentMode};
 
 fn main() {
-  // let total_cpu = bevy::tasks::logical_core_count();
-  // let compute_cpu = (total_cpu as f32 * 0.75) as usize;
-  // let async_cpu = total_cpu - compute_cpu;
-
-  // println!("total_cpu {}, compute_cpu {} async_cpu {}", total_cpu, compute_cpu, async_cpu);
-
-  App::build()
-    .add_plugins(DefaultPlugins)
-    // .add_plugins(MinimalPlugins)
-    .add_plugin(RapierPhysicsPlugin::<NoUserData>::default())
-    .add_plugin(FrameTimeDiagnosticsPlugin::default())
-    .add_plugin(LogDiagnosticsPlugin::default())
-    // .insert_resource(AsyncComputeTaskPool(
-    //   TaskPoolBuilder::default()
-    //     .num_threads(async_cpu)
-    //     .thread_name("Async Compute Task Pool".to_string())
-    //     .build(),
-    // ))
-    // .insert_resource(ComputeTaskPool(
-    //   TaskPoolBuilder::default()
-    //     .num_threads(compute_cpu)
-    //     .thread_name("Compute Task Pool".to_string())
-    //     .build(),
-    // ))
-    .add_startup_system(startup.system())
-    .run();
+    App::new()
+        // Disable pipelined rendering to prioritize latency reduction
+        // .add_plugins(DefaultPlugins.build().disable::<PipelinedRenderingPlugin>())
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+          primary_window: Some(Window {
+            title: "Bevytest".into(),
+            resolution: (800., 600.).into(),
+            present_mode: PresentMode::AutoVsync,
+            fit_canvas_to_parent: true,
+            prevent_default_event_handling: false,
+            ..default()
+          }),
+          ..default()
+        }))
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        .add_plugin(bevy::diagnostic::LogDiagnosticsPlugin::default())
+        .add_plugin(bevy_framepace::FramepacePlugin)
+        .add_plugin(bevy_framepace::debug::DiagnosticsPlugin)
+        .add_plugin(bevy_framepace::debug::CursorPlugin)
+        .add_startup_system(setup)
+        .add_system(toggle_plugin)
+        .add_system(update_ui)
+        .run();
 }
 
-fn startup(
-  mut commands: Commands,
-  // mut meshes: ResMut<Assets<Mesh>>,
-  // mut materials: ResMut<Assets<StandardMaterial>>,
-  mut rapier_config: ResMut<RapierConfiguration>,
+#[derive(Component)]
+struct EnableText;
+
+fn toggle_plugin(
+    mut settings: ResMut<bevy_framepace::FramepaceSettings>,
+    input: Res<Input<KeyCode>>,
 ) {
-  // rapier_config.query_pipeline_active = false;
-  // rapier_config.physics_pipeline_active = false;
-  println!("core count {:?}", bevy::tasks::logical_core_count());
+    if input.just_pressed(KeyCode::Space) {
+        use bevy_framepace::Limiter;
+        settings.limiter = match settings.limiter {
+            Limiter::Auto => Limiter::Off,
+            Limiter::Off => Limiter::from_framerate(30.0),
+            Limiter::Manual(_) => Limiter::Auto,
+        }
+    }
+}
 
-  for index in 0..20000 {
-    let size = 1.0;
-    let collider = ColliderBundle {
-      position: ColliderPosition(Vec3::new(index as f32 * size, 0.0, 0.0).into()),
-      shape: ColliderShape::cuboid(size, size, size),
-      flags: ColliderFlags {
-        active_collision_types: ActiveCollisionTypes::DYNAMIC_STATIC,
-        ..ColliderFlags::default()
-      },
-      ..ColliderBundle::default()
+fn update_ui(
+    mut text: Query<&mut Text, With<EnableText>>,
+    settings: Res<bevy_framepace::FramepaceSettings>,
+) {
+    text.single_mut().sections[1].value = format!("{}", settings.limiter);
+}
+
+/// set up the scene
+fn setup(mut commands: Commands, mut windows: Query<&mut Window>, asset_server: Res<AssetServer>) {
+    windows.iter_mut().next().unwrap().cursor.icon = CursorIcon::Crosshair;
+    commands.spawn((Camera3dBundle::default(),));
+    // UI
+    let font = asset_server.load("fonts/FiraMono-Medium.ttf");
+    let style = TextStyle {
+        font,
+        font_size: 60.0,
+        color: Color::WHITE,
     };
-
-    commands
-      .spawn()
-      .insert_bundle(collider)
-      .insert(ColliderPositionSync::Discrete);
-  }
-  
+    commands.spawn((
+        TextBundle::from_sections(vec![
+            TextSection {
+                value: "Frame pacing: ".to_string(),
+                style: style.clone(),
+            },
+            TextSection {
+                value: "".to_string(),
+                style: style.clone(),
+            },
+            TextSection {
+                value: "\n[press space]".to_string(),
+                style,
+            },
+        ]),
+        EnableText,
+    ));
 }
-
-pub fn convert_flatu32_to_points(array: Vec<u32>) -> Vec<[u32; 3]> {
-  // let mut points: Vec<Point<u32>> = Vec::new();
-  let mut points: Vec<[u32; 3]> = Vec::new();
-
-  let slices: Vec<&[u32]> = array.chunks(3).collect();
-  for slice in slices.iter() {
-    // points.push(Point::new(slice[0], slice[1], slice[2]));
-    points.push([slice[0], slice[1], slice[2]]);
-  }
-  points
-}
-
-pub fn convert_arrayf32_to_points(array: Vec<[f32; 3]>) -> Vec<Point<f32>> {
-  let mut points: Vec<Point<f32>> = Vec::new();
-
-  for array_p in array.iter() {
-    // FIXME: Testing to move down the meshes to match the voxel
-    // println!("pos {:?}", array_p[1]);
-    points.push(Point::new(array_p[0], array_p[1], array_p[2]));
-  }
-  points
-}
-
