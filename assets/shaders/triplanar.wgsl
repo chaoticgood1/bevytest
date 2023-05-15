@@ -89,9 +89,12 @@ fn fragment(input: FragmentInput) -> @location(0) vec4<f32> {
 
   let dx_normal = dpdx(input.world_position);
   let dy_normal = dpdy(input.world_position);
+  let a = vec3<f32>(dx_normal.x, dx_normal.y, dx_normal.z);
+  let b = vec3<f32>(dy_normal.x, dy_normal.y, dy_normal.z);
+
   // let cross = cross(dx_normal, dy_normal); // Error in WebGPU
-  // let normal = normalize(cross(dx_normal, dy_normal));
-  let normal = input.world_normal;
+  let normal = normalize(cross(a, b));
+  // let normal = input.world_normal;
 
   let sharpness = 10.0;
   var weights = pow(abs(normal.xyz), vec3<f32>(sharpness, sharpness, sharpness));
