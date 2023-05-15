@@ -93,49 +93,12 @@ fn fragment(input: FragmentInput) -> @location(0) vec4<f32> {
   // let normal = normalize(cross(dx_normal, dy_normal));
   let normal = input.world_normal;
 
-
   let sharpness = 10.0;
   var weights = pow(abs(normal.xyz), vec3<f32>(sharpness, sharpness, sharpness));
   weights = weights / (weights.x + weights.y + weights.z);
 
   var color = dx * weights.x + dy * weights.y + dz * weights.z;
   return color;
-
-
-  // var pbr_input: PbrInput = pbr_input_new();
-  // pbr_input.material.base_color = pbr_input.material.base_color * color;
-  // pbr_input.frag_coord = input.frag_coord;
-  // pbr_input.world_position = input.world_position;
-  // pbr_input.world_normal = prepare_world_normal(
-  //   input.world_normal,
-  //   true,
-  //   false,
-  // );
-
-  // pbr_input.is_orthographic = view.projection[3].w == 1.0;
-
-  // let sharpness_1 = 8.0;
-  // var weights_1 = pow(abs(input.world_normal), vec3(sharpness_1));
-  // weights_1 = weights_1 / (weights_1.x + weights_1.y + weights_1.z);
-
-  // let scale = 1.0;
-  // let uv_x = input.world_position.yz * scale;
-  // let uv_y = input.world_position.zx * scale;
-  // let uv_z = input.world_position.xy * scale;
-  // var triplanar = Triplanar(weights_1, uv_x, uv_y, uv_z);
-
-  // pbr_input.N = triplanar_normal_to_world_splatted(
-  //   input.voxel_weight, 
-  //   input.world_normal, 
-  //   input.voxel_type_1, 
-  //   triplanar
-  // );
-
-  // pbr_input.V = calculate_view(input.world_position, pbr_input.is_orthographic);
-
-  // return tone_mapping(pbr(pbr_input));
-
-  // return vec4<f32>(0.0, 0.0, 0.0, 1.0);
 }
 
 

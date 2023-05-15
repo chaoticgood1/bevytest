@@ -9,7 +9,7 @@ wasm-bindgen --out-name bevytest --out-dir assets/wasm --target web target/wasm3
 
 [tasks.client]
 script = '''
-basic-http-server .
+basic-http-server -a 127.0.0.1:4001
 '''
 
 [tasks.web-wasm-bindgen-cli]
