@@ -1,6 +1,5 @@
 #import bevy_pbr::mesh_view_bindings
 #import bevy_pbr::mesh_bindings
-#import bevy_pbr::mesh_functions
 
 #import bevy_pbr::pbr_types
 #import bevy_pbr::utils
@@ -8,102 +7,56 @@
 #import bevy_pbr::lighting
 #import bevy_pbr::shadows
 #import bevy_pbr::fog
-// #import bevy_pbr::pbr_functions
+#import bevy_pbr::pbr_functions
 #import bevy_pbr::pbr_ambient
 
-#ifdef TONEMAP_IN_SHADER
-#import bevy_core_pipeline::tonemapping
-#endif
-
-
 @group(1) @binding(0)
-var albedo: texture_2d_array<f32>;
+var my_array_texture: texture_2d_array<f32>;
 @group(1) @binding(1)
-var albedo_sampler: sampler;
-@group(1) @binding(2)
-var normal: texture_2d_array<f32>;
-@group(1) @binding(3)
-var normal_sampler: sampler;
-
-
-struct Vertex {
-  @location(0) position: vec3<f32>,
-  @location(1) normal: vec3<f32>,
-};
-
-struct VertexOutput {
-  @builtin(position) clip_position: vec4<f32>,
-  @location(0) world_position: vec4<f32>,
-  @location(1) world_normal: vec3<f32>,
-};
-
-@vertex
-fn vertex(vertex: Vertex) -> VertexOutput {
-  var out: VertexOutput;
-  out.world_position = mesh_position_local_to_world(mesh.model, vec4<f32>(vertex.position, 1.0));
-  out.clip_position = mesh_position_local_to_clip(mesh.model, vec4<f32>(vertex.position, 1.0));
-  out.world_normal = vertex.normal;
-  return out;
-}
+var my_array_texture_sampler: sampler;
 
 struct FragmentInput {
-  // @builtin(position) frag_coord: vec4<f32>,
-  @builtin(front_facing) is_front: bool,
-  @builtin(position) frag_coord: vec4<f32>,
-
-  @location(0) world_position: vec4<f32>,
-  @location(1) world_normal: vec3<f32>,
-
-  // #import bevy_pbr::mesh_vertex_output
+    @builtin(front_facing) is_front: bool,
+    @builtin(position) frag_coord: vec4<f32>,
+    // #import bevy_pbr::mesh_vertex_output
 };
 
 @fragment
-fn fragment(input: FragmentInput) -> @location(0) vec4<f32> {
-  var zy = input.world_position.zy % 1.0;
-  if zy.x < 0.0 {
-    zy.x += 1.0;
-  }
-  if zy.y < 0.0 {
-    zy.y += 1.0;
-  }
+fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
+//     let layer = i32(in.world_position.x) & 0x3;
 
-  var xz = input.world_position.xz % 1.0;
-  if xz.x < 0.0 {
-    xz.x += 1.0;
-  }
-  if xz.y < 0.0 {
-    xz.y += 1.0;
-  }
+//     // Prepare a 'processed' StandardMaterial by sampling all textures to resolve
+//     // the material members
+//     var pbr_input: PbrInput = pbr_input_new();
 
-  var xy = input.world_position.xy % 1.0;
-  if xy.x < 0.0 {
-    xy.x += 1.0;
-  }
-  if xy.y < 0.0 {
-    xy.y += 1.0;
-  }
+//     pbr_input.material.base_color = textureSample(my_array_texture, my_array_texture_sampler, in.uv, layer);
+// #ifdef VERTEX_COLORS
+//     pbr_input.material.base_color = pbr_input.material.base_color * in.color;
+// #endif
 
-  var dx = textureSample(albedo, albedo_sampler, zy, i32(1));
-  var dy = textureSample(albedo, albedo_sampler, xz, i32(1));
-  var dz = textureSample(albedo, albedo_sampler, xy, i32(1));
+//     pbr_input.frag_coord = in.frag_coord;
+//     pbr_input.world_position = in.world_position;
+//     pbr_input.world_normal = prepare_world_normal(
+//         in.world_normal,
+//         (pbr_input.material.flags & STANDARD_MATERIAL_FLAGS_DOUBLE_SIDED_BIT) != 0u,
+//         in.is_front,
+//     );
 
-  let dx_normal = dpdx(input.world_position);
-  let dy_normal = dpdy(input.world_position);
-  let a = vec3<f32>(dx_normal.x, dx_normal.y, dx_normal.z);
-  let b = vec3<f32>(dy_normal.x, dy_normal.y, dy_normal.z);
+//     pbr_input.is_orthographic = view.projection[3].w == 1.0;
 
-  // let cross = cross(dx_normal, dy_normal); // Error in WebGPU
-  let normal = normalize(cross(a, b));
-  // let normal = input.world_normal;
+//     pbr_input.N = apply_normal_mapping(
+//         pbr_input.material.flags,
+//         pbr_input.world_normal,
+// #ifdef VERTEX_TANGENTS
+// #ifdef STANDARDMATERIAL_NORMAL_MAP
+//         in.world_tangent,
+// #endif
+// #endif
+//         in.uv,
+//     );
+//     pbr_input.V = calculate_view(in.world_position, pbr_input.is_orthographic);
 
-  let sharpness = 10.0;
-  var weights = pow(abs(normal.xyz), vec3<f32>(sharpness, sharpness, sharpness));
-  weights = weights / (weights.x + weights.y + weights.z);
+//     return tone_mapping(pbr(pbr_input));
 
-  var color = dx * weights.x + dy * weights.y + dz * weights.z;
-  return color;
+  return vec4<f32>(0.0, 0.0, 0.0, 1.0);
 }
-
-
-
-
