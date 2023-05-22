@@ -9,3 +9,4 @@ edition = "2021"
 bevy = "0.10.1"
 bevy_framepace = "0.12.1"
 wasm-bindgen = "0.2.85"
+bevy_flycam = { git = "https://github.com/Nickan/bevy_flycam.git", branch="MakeMouseMovementWorkOnWasm" }
