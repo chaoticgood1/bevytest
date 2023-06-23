@@ -1,10 +1,13 @@
 [package]
 name = "rapier_test"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.5.0"
-bevy_rapier3d = { version = "0.10.2", features = [ "parallel", "simd-stable" ]}
+bevy = "0.10.1"
+bevy_egui = "0.20.3"
+bevy_flycam = { path = "../bevy_flycam" }
+fast-surface-nets = "0.2.0"
+noise = "0.7.0"
